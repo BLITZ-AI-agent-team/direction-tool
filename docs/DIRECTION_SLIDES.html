@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Direction - 動画制作 業務効率化システム</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css">
+<style>
+  .reveal { font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif; }
+  .reveal h1 { font-size: 2.2em; color: #1a1a2e; }
+  .reveal h2 { font-size: 1.6em; color: #16213e; border-bottom: 3px solid #0f3460; padding-bottom: 10px; }
+  .reveal h3 { font-size: 1.2em; color: #0f3460; }
+  .reveal table { font-size: 0.65em; margin: 0 auto; border-collapse: collapse; }
+  .reveal table th { background: #0f3460; color: white; padding: 8px 14px; }
+  .reveal table td { padding: 8px 14px; border: 1px solid #ddd; }
+  .reveal table tr:nth-child(even) { background: #f0f4ff; }
+  .reveal .before { background: #fff0f0; }
+  .reveal .after { background: #f0fff0; }
+  .reveal ul { font-size: 0.8em; }
+  .reveal li { margin-bottom: 8px; }
+  .reveal .highlight { color: #e94560; font-weight: bold; }
+  .reveal .accent { color: #0f3460; font-weight: bold; }
+  .reveal .big-number { font-size: 3em; color: #e94560; font-weight: bold; }
+  .reveal .subtitle { font-size: 0.6em; color: #666; margin-top: 10px; }
+  .reveal .flow-box { background: #f0f4ff; border-radius: 12px; padding: 15px 20px; margin: 8px 0; font-size: 0.7em; text-align: left; border-left: 4px solid #0f3460; }
+  .reveal .flow-arrow { font-size: 1.2em; color: #0f3460; }
+  .reveal .icon { font-size: 1.5em; }
+  .reveal .two-col { display: flex; gap: 20px; justify-content: center; }
+  .reveal .two-col > div { flex: 1; }
+  .reveal .card { background: #f8f9fa; border-radius: 10px; padding: 15px; margin: 8px 0; font-size: 0.65em; text-align: left; }
+  .reveal .card-red { border-left: 4px solid #e94560; }
+  .reveal .card-green { border-left: 4px solid #2ecc71; }
+  .reveal .card-blue { border-left: 4px solid #0f3460; }
+  .reveal .percent { font-size: 2em; color: #2ecc71; font-weight: bold; }
+  .reveal .small { font-size: 0.55em; color: #888; }
+  .reveal section { text-align: center; }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- Slide 1: Title -->
+<section>
+  <h1>Direction</h1>
+  <p style="font-size:1.2em; color:#0f3460;">動画制作・編集<br>業務効率化システム</p>
+  <br>
+  <p class="subtitle">Video Production Intelligence System<br>2026年3月</p>
+</section>
+
+<!-- Slide 2: Problem -->
+<section>
+  <h2>こんなことに時間を取られていませんか？</h2>
+  <br>
+  <div class="two-col">
+    <div>
+      <div class="card card-red">
+        <strong>素材整理</strong><br>100本の素材を1つずつ確認してフォルダ分け...
+      </div>
+      <div class="card card-red">
+        <strong>無音カット</strong><br>タイムラインの波形を見ながら手作業で削除...
+      </div>
+      <div class="card card-red">
+        <strong>参考動画探し</strong><br>TVer・YouTubeで延々と検索・視聴...
+      </div>
+    </div>
+    <div>
+      <div class="card card-red">
+        <strong>テロップ作成</strong><br>文字起こし→テロップ作成→配置を手作業で...
+      </div>
+      <div class="card card-red">
+        <strong>BGM探し</strong><br>MotionArray・Artlistで1曲ずつ試聴...
+      </div>
+      <div class="card card-red">
+        <strong>過去素材探し</strong><br>どのフォルダのどの動画か思い出せない...
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Slide 3: Solution Overview -->
+<section>
+  <h2>Directionが解決します</h2>
+  <br>
+  <p style="font-size:0.9em;">面倒な作業はAIが自動化。<br>あなたは<span class="highlight">クリエイティブな判断</span>に集中できます。</p>
+  <br>
+  <table>
+    <tr><th>あなたがやること</th><th></th><th>AIが自動でやること</th></tr>
+    <tr><td>指示を出す</td><td class="flow-arrow">&rarr;</td><td>素材の整理・分類・名称付け</td></tr>
+    <tr><td>確認・微調整</td><td class="flow-arrow">&rarr;</td><td>無音部分のカット提案</td></tr>
+    <tr><td>イメージを伝える</td><td class="flow-arrow">&rarr;</td><td>参考動画の候補を提示</td></tr>
+    <tr><td>選ぶ・直す</td><td class="flow-arrow">&rarr;</td><td>テロップの自動生成・配置</td></tr>
+    <tr><td>イメージを伝える</td><td class="flow-arrow">&rarr;</td><td>BGM・SEの候補を提示</td></tr>
+    <tr><td>キーワードを伝える</td><td class="flow-arrow">&rarr;</td><td>過去素材から該当シーンを検索</td></tr>
+    <tr><td>何もしない</td><td class="flow-arrow">&rarr;</td><td>夜間に自動ダウンロード</td></tr>
+  </table>
+</section>
+
+<!-- Slide 4: Module 1 -->
+<section>
+  <h2>Module 1: 素材の自動整理・分類</h2>
+  <br>
+  <div class="two-col">
+    <div>
+      <h3>Before</h3>
+      <div class="card card-red">
+        動画を<strong>1本ずつ再生して確認</strong><br>
+        手動でフォルダ分け・名前変更<br><br>
+        <span class="highlight">素材100本で 3〜5時間</span>
+      </div>
+    </div>
+    <div>
+      <h3>After</h3>
+      <div class="card card-green">
+        AIが動画の内容を分析して<strong>自動分類</strong><br>
+        シーンごとに名称付け（画角・背景を認識）<br><br>
+        <span class="accent">素材100本で 15〜30分（確認のみ）</span>
+      </div>
+    </div>
+  </div>
+  <br>
+  <p><span class="percent">90%</span> 削減</p>
+</section>
+
+<!-- Slide 5: Module 2 -->
+<section>
+  <h2>Module 2: 不要部分の自動カット</h2>
+  <br>
+  <div class="two-col">
+    <div>
+      <h3>Before</h3>
+      <div class="card card-red">
+        タイムラインの波形を見て<strong>手動カット</strong><br>
+        スタッフの声も全編聞いてチェック<br><br>
+        <span class="highlight">1本あたり 1〜2時間</span>
+      </div>
+    </div>
+    <div>
+      <h3>After</h3>
+      <div class="card card-green">
+        無音2秒以上をAIが<strong>自動検出</strong><br>
+        「誰の声か」を判別してスタッフ声をマーク<br>
+        <strong>Premiere Pro</strong>のタイムラインに直接出力<br><br>
+        <span class="accent">10分/本（確認・微調整のみ）</span>
+      </div>
+    </div>
+  </div>
+  <br>
+  <p><span class="percent">85%</span> 削減</p>
+</section>
+
+<!-- Slide 6: Module 3 -->
+<section>
+  <h2>Module 3: 参考動画リサーチ</h2>
+  <br>
+  <div class="two-col">
+    <div>
+      <h3>Before</h3>
+      <div class="card card-red">
+        TVer・YouTubeで<strong>手動検索</strong><br>
+        1つずつ視聴して確認<br>
+        過去に見た参考は<strong>記憶頼み</strong><br><br>
+        <span class="highlight">1シーンあたり 30分〜1時間</span>
+      </div>
+    </div>
+    <div>
+      <h3>After</h3>
+      <div class="card card-green">
+        AIにイメージを伝えるだけで<strong>自動検索</strong><br>
+        TVer/ABEMAを<strong>自動録画</strong>して蓄積<br>
+        録画を<strong>シーン分割・タグ付け</strong>して検索可能に<br><br>
+        <span class="accent">5分以内に候補リスト表示</span>
+      </div>
+    </div>
+  </div>
+  <br>
+  <p><span class="percent">90%</span> 削減</p>
+</section>
+
+<!-- Slide 7: Module 3 Detail - Reference Library -->
+<section>
+  <h2>参考動画ライブラリ（Module 3 詳細）</h2>
+  <br>
+  <div class="flow-box">
+    <strong>Step 1:</strong> TVer / ABEMA の番組を自動録画
+  </div>
+  <p class="flow-arrow">&darr;</p>
+  <div class="flow-box">
+    <strong>Step 2:</strong> AIがシーンごとに自動分割
+  </div>
+  <p class="flow-arrow">&darr;</p>
+  <div class="flow-box">
+    <strong>Step 3:</strong> 各シーンにタグを自動付与<br>
+    構成（オープニング/インタビュー）、演出（ズームイン/スロー）、<br>
+    雰囲気（感動的/コミカル）、テロップ（ポップ体/ニュース風）、カメラ（引き/寄り/俯瞰）
+  </div>
+  <p class="flow-arrow">&darr;</p>
+  <div class="flow-box">
+    <strong>Step 4:</strong> 蓄積されたライブラリから壁打ちで検索<br>
+    例: 「テロップがポップで手元アップの料理シーン」→ 該当シーンを即座に表示
+  </div>
+</section>
+
+<!-- Slide 8: Module 4 -->
+<section>
+  <h2>Module 4: テロップの自動生成</h2>
+  <br>
+  <div class="two-col">
+    <div>
+      <h3>Before</h3>
+      <div class="card card-red">
+        動画を聞きながら<strong>手動で書き起こし</strong><br>
+        テロップを1つずつ作成・配置<br><br>
+        <span class="highlight">1本あたり 2〜4時間</span>
+      </div>
+    </div>
+    <div>
+      <h3>After</h3>
+      <div class="card card-green">
+        AIが<strong>高精度日本語文字起こし</strong>（TV音声学習済み）<br>
+        番組ジャンルに合わせたテロップ候補を提案<br>
+        <strong>Premiere Proに自動配置</strong>（修正自由）<br><br>
+        <span class="accent">30分/本（確認・修正のみ）</span>
+      </div>
+    </div>
+  </div>
+  <br>
+  <p><span class="percent">80%</span> 削減 &nbsp;&nbsp; <span class="small">追加料金なし（Adobe CC契約内）</span></p>
+</section>
+
+<!-- Slide 9: Module 5 -->
+<section>
+  <h2>Module 5: BGM・SEリサーチ</h2>
+  <br>
+  <div class="two-col">
+    <div>
+      <h3>Before</h3>
+      <div class="card card-red">
+        MotionArray・Artlistで<strong>手動検索</strong><br>
+        1曲ずつ試聴して選定<br>
+        契約中の2サイトのみ<br><br>
+        <span class="highlight">1シーンあたり 30分〜1時間</span>
+      </div>
+    </div>
+    <div>
+      <h3>After</h3>
+      <div class="card card-green">
+        「感動的なピアノ曲」と伝えるだけ<br>
+        有料サイト + 無料サイト + <strong>AI生成</strong>を横断検索<br>
+        プレビュー付きで候補リスト提示<br><br>
+        <span class="accent">5分以内に候補表示</span>
+      </div>
+    </div>
+  </div>
+  <br>
+  <p><span class="percent">90%</span> 削減</p>
+</section>
+
+<!-- Slide 10: Module 6 -->
+<section>
+  <h2>Module 6: 過去素材の検索</h2>
+  <br>
+  <div class="two-col">
+    <div>
+      <h3>Before</h3>
+      <div class="card card-red">
+        フォルダを1つずつ開いて再生<br>
+        撮影日・カメラ番号くらいの大まかな分類<br>
+        目的のシーンを探すのに<strong>数時間</strong>かかることも
+      </div>
+    </div>
+    <div>
+      <h3>After</h3>
+      <div class="card card-green">
+        全動画を<strong>自動文字起こし + タグ付け</strong><br>
+        「田中さんが商品を説明してるシーン」で検索<br>
+        <strong>数秒〜数分</strong>で該当シーンを表示
+      </div>
+    </div>
+  </div>
+  <br>
+  <p><span class="percent">95%</span> 削減</p>
+</section>
+
+<!-- Slide 11: Module 7 -->
+<section>
+  <h2>Module 7: 自動ダウンロード</h2>
+  <br>
+  <div class="two-col">
+    <div>
+      <h3>Before</h3>
+      <div class="card card-red">
+        ブラウザから<strong>手動で1つずつ</strong>ダウンロード<br>
+        大容量ファイルの完了を<strong>待つ</strong>必要あり
+      </div>
+    </div>
+    <div>
+      <h3>After</h3>
+      <div class="card card-green">
+        毎晩<strong>自動</strong>でGoogle Drive → ローカルに同期<br>
+        朝出勤したら<strong>完了済み</strong><br>
+        設定後は<strong>何もしなくてOK</strong>
+      </div>
+    </div>
+  </div>
+  <br>
+  <p><span class="percent">100%</span> 自動化</p>
+</section>
+
+<!-- Slide 12: Summary of Time Savings -->
+<section>
+  <h2>削減効果まとめ</h2>
+  <br>
+  <table>
+    <tr>
+      <th>作業</th>
+      <th>現在（目安）</th>
+      <th>導入後（目安）</th>
+      <th>削減率</th>
+    </tr>
+    <tr>
+      <td>素材整理・分類</td>
+      <td class="before">3〜5時間/100本</td>
+      <td class="after">30分/100本</td>
+      <td><strong style="color:#2ecc71">90%</strong></td>
+    </tr>
+    <tr>
+      <td>無音カット</td>
+      <td class="before">1〜2時間/本</td>
+      <td class="after">10分/本</td>
+      <td><strong style="color:#2ecc71">85%</strong></td>
+    </tr>
+    <tr>
+      <td>参考動画リサーチ</td>
+      <td class="before">30分〜1時間/シーン</td>
+      <td class="after">5分/シーン</td>
+      <td><strong style="color:#2ecc71">90%</strong></td>
+    </tr>
+    <tr>
+      <td>テロップ作成</td>
+      <td class="before">2〜4時間/本</td>
+      <td class="after">30分/本</td>
+      <td><strong style="color:#2ecc71">80%</strong></td>
+    </tr>
+    <tr>
+      <td>BGM・SE探し</td>
+      <td class="before">30分〜1時間/シーン</td>
+      <td class="after">5分/シーン</td>
+      <td><strong style="color:#2ecc71">90%</strong></td>
+    </tr>
+    <tr>
+      <td>過去素材の検索</td>
+      <td class="before">1〜数時間</td>
+      <td class="after">数秒〜数分</td>
+      <td><strong style="color:#2ecc71">95%</strong></td>
+    </tr>
+    <tr>
+      <td>ファイルDL</td>
+      <td class="before">手動・待ち時間あり</td>
+      <td class="after">完全自動</td>
+      <td><strong style="color:#2ecc71">100%</strong></td>
+    </tr>
+  </table>
+</section>
+
+<!-- Slide 13: What You Need to Do -->
+<section>
+  <h2>あなたがやることはシンプル</h2>
+  <br>
+  <div class="flow-box" style="font-size:0.85em;">
+    <strong>Step 1:</strong> Claude Code（チャット画面）に日本語で指示を出す<br>
+    <span class="small">例: 「この動画のテロップをバラエティ風で作って」</span>
+  </div>
+  <p class="flow-arrow">&darr;</p>
+  <div class="flow-box" style="font-size:0.85em;">
+    <strong>Step 2:</strong> AIが処理して結果を提示
+  </div>
+  <p class="flow-arrow">&darr;</p>
+  <div class="flow-box" style="font-size:0.85em;">
+    <strong>Step 3:</strong> Premiere Pro で確認・微調整
+  </div>
+  <br>
+  <p style="font-size:0.8em;">
+    <span class="accent">新しいソフトを覚える必要はありません</span><br>
+    Premiere Proはそのまま。追加料金もなし。
+  </p>
+</section>
+
+<!-- Slide 14: Important Points -->
+<section>
+  <h2>大切なポイント</h2>
+  <br>
+  <div class="two-col">
+    <div>
+      <div class="card card-blue">
+        <h3 style="margin:0 0 8px 0;">AIがやること</h3>
+        <ul style="margin:0; padding-left:20px;">
+          <li>動画の分析・分類</li>
+          <li>不要シーンの検出</li>
+          <li>テロップの文字起こし・配置</li>
+          <li>BGM候補の検索</li>
+          <li>過去素材の検索</li>
+          <li>ファイルの自動DL</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card card-green">
+        <h3 style="margin:0 0 8px 0;">あなたが判断すること</h3>
+        <ul style="margin:0; padding-left:20px;">
+          <li>分類結果の最終確認</li>
+          <li><strong>カットの最終判断</strong></li>
+          <li>テロップの表現・修正</li>
+          <li>どの曲を使うか</li>
+          <li>どの素材を使うか</li>
+          <li>クリエイティブな方向性</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <br>
+  <p style="font-size:0.9em;">
+    AI = <span class="accent">超高速アシスタント</span> &nbsp;/&nbsp;
+    あなた = <span class="highlight">最終決定者</span>
+  </p>
+</section>
+
+<!-- Slide 15: Current Environment -->
+<section>
+  <h2>今の環境はそのまま</h2>
+  <br>
+  <div class="card card-blue" style="font-size:0.85em; max-width:600px; margin:0 auto;">
+    <table style="font-size:1em; width:100%;">
+      <tr><td><strong>Premiere Pro</strong></td><td>そのまま使えます（追加料金なし）</td></tr>
+      <tr><td><strong>Google Drive</strong></td><td>使い方は変わりません</td></tr>
+      <tr><td><strong>MotionArray</strong></td><td>併用できます（手動検索）</td></tr>
+      <tr><td><strong>Artlist</strong></td><td>併用できます</td></tr>
+    </table>
+  </div>
+  <br>
+  <p style="font-size:0.9em;">新しいのは<span class="accent">「Claude Code」</span>だけ<br>チャットで日本語で指示を出すだけです</p>
+</section>
+
+<!-- Slide 16: Roadmap -->
+<section>
+  <h2>導入ステップ</h2>
+  <br>
+  <div class="flow-box">
+    <strong>Phase 1（1週間）</strong><br>
+    無音カット自動化 / 夜間ダウンロード設定 / 文字起こし開始
+  </div>
+  <p class="flow-arrow">&darr;</p>
+  <div class="flow-box">
+    <strong>Phase 2（2週間）</strong><br>
+    過去素材の検索システム構築 / テロップ自動配置 / シーン自動分割
+  </div>
+  <p class="flow-arrow">&darr;</p>
+  <div class="flow-box">
+    <strong>Phase 3（1ヶ月）</strong><br>
+    参考動画ライブラリ構築 / スタッフ声識別 / BGM横断検索
+  </div>
+  <p class="flow-arrow">&darr;</p>
+  <div class="flow-box">
+    <strong>Phase 4（2ヶ月）</strong><br>
+    全機能の統合 / テロップテンプレート充実 / ライブラリ活用最適化
+  </div>
+</section>
+
+<!-- Slide 17: End -->
+<section>
+  <h1>Direction</h1>
+  <p style="font-size:1.1em; color:#0f3460;">面倒な作業はAIに。<br>あなたはクリエイティブに集中。</p>
+  <br><br>
+  <p class="small">ご質問・ご要望があればお気軽にお伝えください</p>
+</section>
+
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script>
+Reveal.initialize({
+  hash: true,
+  slideNumber: true,
+  transition: 'slide',
+  width: 1200,
+  height: 700,
+});
+</script>
+</body>
+</html>

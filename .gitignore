@@ -1,3 +1,6 @@
 # Taisun Agent symlinks (local environment)
 .claude
 .mcp.json
+
+# Session state (auto-generated)
+.workflow_state.json
