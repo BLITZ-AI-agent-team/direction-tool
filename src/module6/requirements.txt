@@ -1,0 +1,35 @@
+# Direction Module 6 - Python Dependencies
+
+# Database
+psycopg2-binary>=2.9.9
+pgvector>=0.3.0
+
+# Audio/Video Processing
+ffmpeg-python>=0.2.0
+
+# Speech-to-Text (local)
+transformers>=4.40.0
+torch>=2.2.0
+accelerate>=0.30.0
+kotoba-whisper>=0.1.0
+
+# Speech-to-Text (API fallback)
+openai>=1.30.0
+
+# Embedding
+tiktoken>=0.7.0
+
+# Scene Detection
+scenedetect[opencv]>=0.6.4
+
+# Image Processing / CLIP
+Pillow>=10.3.0
+open-clip-torch>=2.26.0
+
+# Google Drive
+google-api-python-client>=2.130.0
+google-auth>=2.29.0
+
+# Utilities
+python-dotenv>=1.0.1
+tqdm>=4.66.0

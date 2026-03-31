@@ -4,3 +4,21 @@
 
 # Session state (auto-generated)
 .workflow_state.json
+.agent-trace/
+.agent_usage_state.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Environment / Secrets
+.env
+*.json
+!package.json
+!tsconfig.json
+src/module6/config/.env
+
+# Google Service Account Key
+*service-account*.json
