@@ -39,7 +39,7 @@ def extract_metadata(video_path):
         "-show_format", "-show_streams",
         str(video_path)
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if result.returncode != 0:
         raise RuntimeError(f"ffprobe failed: {result.stderr}")
 
@@ -97,7 +97,7 @@ def convert_vfr_to_cfr(video_path, output_path=None):
         "-c:a", "copy",
         str(output_path)
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if result.returncode != 0:
         raise RuntimeError(f"VFR→CFR conversion failed: {result.stderr[:500]}")
     return str(output_path)
@@ -118,7 +118,7 @@ def extract_audio(video_path, output_path=None, sample_rate=16000):
         "-vn",
         str(output_path)
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if result.returncode != 0:
         raise RuntimeError(f"Audio extraction failed: {result.stderr[:500]}")
     return str(output_path)
@@ -213,7 +213,7 @@ def transcribe_api_chunked(audio_path, client, chunk_duration=600):
         "-ar", "16000", "-ac", "1",
         str(chunks_dir / "chunk_%03d.wav")
     ]
-    subprocess.run(cmd, capture_output=True, text=True)
+    subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
 
     all_segments = []
     offset = 0.0
@@ -324,36 +324,18 @@ def save_transcript_json(segments, metadata, output_path):
 
 
 # ============================================================
-# OpenAI Embedding
+# Embedding (Gemini API)
 # ============================================================
 def get_embedding(text):
-    """OpenAI text-embedding-3-smallでテキストをベクトル化"""
-    from openai import OpenAI
-
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    response = client.embeddings.create(
-        model="text-embedding-3-small",
-        input=text,
-    )
-    return response.data[0].embedding
+    """Gemini text-embedding-004でテキストをベクトル化（768次元）"""
+    from shared.embedding import get_embedding as _get_embedding
+    return _get_embedding(text)
 
 
 def get_embeddings_batch(texts, batch_size=100):
     """バッチでベクトル化"""
-    from openai import OpenAI
-
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    all_embeddings = []
-
-    for i in range(0, len(texts), batch_size):
-        batch = texts[i:i + batch_size]
-        response = client.embeddings.create(
-            model="text-embedding-3-small",
-            input=batch,
-        )
-        all_embeddings.extend([d.embedding for d in response.data])
-
-    return all_embeddings
+    from shared.embedding import get_embeddings_batch as _get_embeddings_batch
+    return _get_embeddings_batch(texts, batch_size=batch_size)
 
 
 # ============================================================

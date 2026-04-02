@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS transcripts (
   asset_id UUID NOT NULL REFERENCES media_assets(id) ON DELETE CASCADE,
   scene_id UUID REFERENCES scenes(id) ON DELETE SET NULL,
   text TEXT NOT NULL,
-  text_embedding vector(1536),
+  text_embedding vector(768),
   start_tc TEXT NOT NULL,
   end_tc TEXT NOT NULL,
   start_sec FLOAT NOT NULL,

@@ -21,14 +21,9 @@ load_dotenv(Path(__file__).resolve().parent.parent / "config" / ".env")
 
 
 def get_query_embedding(query_text):
-    """検索クエリをベクトル化"""
-    from openai import OpenAI
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    response = client.embeddings.create(
-        model="text-embedding-3-small",
-        input=query_text,
-    )
-    return response.data[0].embedding
+    """検索クエリをベクトル化（Gemini text-embedding-004）"""
+    from shared.embedding import get_embedding
+    return get_embedding(query_text)
 
 
 def format_timecode(start_tc, end_tc):

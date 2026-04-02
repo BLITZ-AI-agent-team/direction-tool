@@ -44,7 +44,7 @@ class GoogleDriveClient:
         return self
 
     def list_videos(self, folder_id=None, modified_after=None):
-        """指定フォルダ内の動画ファイルを一覧取得"""
+        """指定フォルダ内の動画ファイルを一覧取得（共有ドライブ対応）"""
         if folder_id is None:
             folder_id = os.getenv("GOOGLE_DRIVE_FOLDER_ID")
 
@@ -70,6 +70,8 @@ class GoogleDriveClient:
                 fields="nextPageToken, files(id, name, mimeType, size, modifiedTime, parents)",
                 pageToken=page_token,
                 pageSize=100,
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True,
             ).execute()
 
             results.extend(response.get("files", []))
@@ -102,18 +104,20 @@ class GoogleDriveClient:
         return all_videos
 
     def list_subfolders(self, folder_id):
-        """サブフォルダ一覧を取得"""
+        """サブフォルダ一覧を取得（共有ドライブ対応）"""
         query = f"'{folder_id}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
         response = self.service.files().list(
             q=query,
             spaces="drive",
             fields="files(id, name)",
             pageSize=100,
+            supportsAllDrives=True,
+            includeItemsFromAllDrives=True,
         ).execute()
         return response.get("files", [])
 
     def get_folder_path(self, folder_id):
-        """フォルダIDからフルパスを取得"""
+        """フォルダIDからフルパスを取得（共有ドライブ対応）"""
         parts = []
         current_id = folder_id
 
@@ -121,7 +125,8 @@ class GoogleDriveClient:
             try:
                 file_meta = self.service.files().get(
                     fileId=current_id,
-                    fields="id, name, parents"
+                    fields="id, name, parents",
+                    supportsAllDrives=True,
                 ).execute()
                 parts.insert(0, file_meta["name"])
                 parents = file_meta.get("parents", [])
@@ -132,8 +137,8 @@ class GoogleDriveClient:
         return "/".join(parts)
 
     def download_file(self, file_id, output_path):
-        """ファイルをダウンロード"""
-        request = self.service.files().get_media(fileId=file_id)
+        """ファイルをダウンロード（共有ドライブ対応）"""
+        request = self.service.files().get_media(fileId=file_id, supportsAllDrives=True)
         with open(output_path, "wb") as f:
             downloader = MediaIoBaseDownload(f, request)
             done = False
@@ -148,10 +153,12 @@ class GoogleDriveClient:
         if file_name is None:
             file_name = Path(local_path).name
 
-        # 同名ファイルが既にあれば更新
+        # 同名ファイルが既にあれば更新（共有ドライブ対応）
         existing = self.service.files().list(
             q=f"'{parent_folder_id}' in parents and name = '{file_name}' and trashed = false",
             fields="files(id)",
+            supportsAllDrives=True,
+            includeItemsFromAllDrives=True,
         ).execute().get("files", [])
 
         if existing:
@@ -159,6 +166,7 @@ class GoogleDriveClient:
             result = self.service.files().update(
                 fileId=existing[0]["id"],
                 media_body=media,
+                supportsAllDrives=True,
             ).execute()
             return result["id"]
         else:
@@ -171,6 +179,7 @@ class GoogleDriveClient:
                 body=file_metadata,
                 media_body=media,
                 fields="id",
+                supportsAllDrives=True,
             ).execute()
             return result["id"]
 

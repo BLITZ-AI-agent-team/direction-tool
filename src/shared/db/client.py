@@ -17,7 +17,11 @@ class DirectionDB:
 
     def connect(self):
         self.conn = psycopg2.connect(self.database_url)
-        register_vector(self.conn)
+        # pgvector拡張が未インストールの場合はスキップ（init_schemaで作成後に登録）
+        try:
+            register_vector(self.conn)
+        except psycopg2.ProgrammingError:
+            self.conn.rollback()
         return self
 
     def close(self):
@@ -226,3 +230,5 @@ class DirectionDB:
         with self.conn.cursor() as cur:
             cur.execute(sql)
         self.conn.commit()
+        # スキーマ作成後にpgvector型を登録
+        register_vector(self.conn)
