@@ -258,7 +258,14 @@ def save_srt(segments, output_path):
 def transcribe(audio_path, gemini_client, max_retries=3):
     for attempt in range(max_retries):
         try:
-            audio_file = gemini_client.files.upload(file=audio_path)
+            import shutil, uuid
+            ascii_path = "/tmp/" + str(uuid.uuid4()) + ".wav"
+            shutil.copy2(audio_path, ascii_path)
+            audio_file = gemini_client.files.upload(file=ascii_path)
+            try:
+                os.remove(ascii_path)
+            except Exception:
+                pass
             resp = gemini_client.models.generate_content(
                 model=GEMINI_MODEL, contents=[PROMPT, audio_file])
             text = resp.text.strip()
