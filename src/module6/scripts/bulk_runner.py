@@ -291,8 +291,10 @@ def embed_texts(texts, gemini_client, batch_size=50):
         batch = texts[i:i+batch_size]
         for text in batch:
             try:
+                from google.genai import types as gtypes
                 result = gemini_client.models.embed_content(
-                    model="gemini-embedding-001", contents=text)
+                    model="gemini-embedding-001", contents=text,
+                    config=gtypes.EmbedContentConfig(output_dimensionality=768))
                 embeddings.append(list(result.embeddings[0].values))
             except Exception as e:
                 log.warning(f"Embed error: {e}")

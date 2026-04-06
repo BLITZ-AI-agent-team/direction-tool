@@ -7,20 +7,23 @@ load_dotenv()
 
 
 def get_embedding(text):
-    """Gemini text-embedding-004でテキストをベクトル化（768次元）"""
+    """Gemini gemini-embedding-001でテキストをベクトル化（768次元に削減）"""
     from google import genai
+    from google.genai import types
 
     client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
     result = client.models.embed_content(
         model="gemini-embedding-001",
         contents=text,
+        config=types.EmbedContentConfig(output_dimensionality=768),
     )
     return list(result.embeddings[0].values)
 
 
 def get_embeddings_batch(texts, batch_size=100):
-    """バッチでベクトル化"""
+    """バッチでベクトル化（768次元に削減）"""
     from google import genai
+    from google.genai import types
 
     client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
     all_embeddings = []
@@ -31,6 +34,7 @@ def get_embeddings_batch(texts, batch_size=100):
             result = client.models.embed_content(
                 model="gemini-embedding-001",
                 contents=text,
+                config=types.EmbedContentConfig(output_dimensionality=768),
             )
             all_embeddings.append(list(result.embeddings[0].values))
 
