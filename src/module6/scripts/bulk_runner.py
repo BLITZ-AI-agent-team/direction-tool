@@ -349,13 +349,7 @@ def process_one(video_info, drive_service, gemini_client, db_pool,
         texts = [s["text"] for s in segments if s.get("text") and len(s["text"]) > 1]
         embeddings = embed_texts(texts, gemini_client) if texts else []
 
-        # Thumbnails
-        thumbs = []
-        for seg in segments:
-            b64 = extract_thumbnail_base64(str(local_path), max(0, seg.get("start", 0)))
-            thumbs.append(b64)
-
-        # DB
+        # DB (insert asset first to get ID for thumbnail path)
         conn = db_pool.getconn()
         try:
             register_vector(conn)
@@ -370,19 +364,40 @@ def process_one(video_info, drive_service, gemini_client, db_pool,
                   meta["codec"], meta["file_size_bytes"]))
             asset_id = cur.fetchone()[0]
 
+            # Thumbnails - save as files on VPS
+            thumb_dir = Path("/root/thumbnails") / str(asset_id)
+            thumb_dir.mkdir(parents=True, exist_ok=True)
+
             emb_idx = 0
+            seg_idx = 0
             for i, seg in enumerate(segments):
                 if not seg.get("text") or len(seg["text"]) < 2:
                     continue
                 emb = embeddings[emb_idx] if emb_idx < len(embeddings) else None
                 emb_idx += 1
-                thumb = thumbs[i] if i < len(thumbs) else None
+
+                # Generate and save thumbnail as file
+                thumb_path_val = None
+                try:
+                    thumb_file = thumb_dir / f"{seg_idx}.jpg"
+                    result = subprocess.run(
+                        ["ffmpeg", "-y", "-ss", str(max(0, seg.get("start", 0))),
+                         "-i", str(local_path), "-vframes", "1",
+                         "-vf", "scale=320:180:force_original_aspect_ratio=decrease,pad=320:180:(ow-iw)/2:(oh-ih)/2",
+                         "-q:v", "5", str(thumb_file)],
+                        capture_output=True, timeout=10)
+                    if result.returncode == 0 and thumb_file.exists():
+                        thumb_path_val = f"{asset_id}/{seg_idx}.jpg"
+                except Exception:
+                    pass
+                seg_idx += 1
+
                 cur.execute("""
                     INSERT INTO transcripts
-                        (asset_id, text, text_embedding, thumbnail_base64,
+                        (asset_id, text, text_embedding, thumbnail_path,
                          start_tc, end_tc, start_sec, end_sec)
                     VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
-                """, (str(asset_id), seg["text"], emb, thumb,
+                """, (str(asset_id), seg["text"], emb, thumb_path_val,
                       seconds_to_tc(seg["start"]), seconds_to_tc(seg["end"]),
                       seg["start"], seg["end"]))
 
