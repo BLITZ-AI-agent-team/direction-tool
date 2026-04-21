@@ -93,10 +93,14 @@ def extract_thumbnail(video_path, timestamp_sec, output_path, timeout=10):
         return False
 
 
-def process_one_asset(asset, drive_service, db_pool, tmp_dir):
-    """1動画の全サムネイル再生成"""
+def process_one_asset(asset, sa_key_path, db_pool, tmp_dir):
+    """1動画の全サムネイル再生成（スレッドセーフ: 各ワーカーで独立drive_service生成）"""
     asset_id, drive_id, file_name, transcripts = asset
     # transcripts: [(transcript_id, start_sec), ...] (thumbnail_path IS NULL のみ)
+
+    # スレッドセーフのため、各ワーカーで独立したdrive_serviceを生成
+    # httplib2はスレッドセーフではないため共有禁止
+    drive_service = get_drive_service(sa_key_path)
 
     local_path = Path(tmp_dir) / f"{asset_id}_{file_name}"
     thumb_dir = THUMB_ROOT / str(asset_id)
@@ -183,7 +187,8 @@ def main():
         log.error(f"Service account key not found: {args.sa_key}")
         sys.exit(1)
 
-    drive_service = get_drive_service(args.sa_key)
+    # httplib2はスレッドセーフでないため、各処理ワーカー内でdrive_serviceを新規生成する。
+    # メイン側では不要（DBクエリのみ実行）。
     db_pool = ThreadedConnectionPool(1, args.workers + 2, DB_URL)
 
     # サムネイル無しのasset一覧を取得（動画サイズ昇順）
@@ -237,7 +242,7 @@ def main():
     try:
         with ThreadPoolExecutor(max_workers=args.workers) as executor:
             futures = {
-                executor.submit(process_one_asset, asset, drive_service, db_pool, tmp_dir): asset[2]
+                executor.submit(process_one_asset, asset, args.sa_key, db_pool, tmp_dir): asset[2]
                 for asset in assets
             }
 
