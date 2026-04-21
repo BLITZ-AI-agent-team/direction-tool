@@ -52,6 +52,9 @@ PROMPT = (
 
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".avi", ".mkv", ".mxf", ".m4v", ".webm"}
 
+SKIP_LIST_PATH = os.environ.get("SKIP_LIST_PATH", "/root/skipped_videos.json")
+MAX_FAILURES_BEFORE_SKIP = 3
+
 # ログ設定
 logging.basicConfig(
     level=logging.INFO,
@@ -62,6 +65,44 @@ logging.basicConfig(
     ]
 )
 log = logging.getLogger("bulk_runner")
+
+
+# ============================================================
+# Skip List (永続的失敗動画の管理)
+# ============================================================
+
+def load_skip_list():
+    """スキップリストをロード。形式: {drive_id: {"count": N, "last_error": "..."}}"""
+    try:
+        with open(SKIP_LIST_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def save_skip_list(skip_dict):
+    try:
+        with open(SKIP_LIST_PATH, "w", encoding="utf-8") as f:
+            json.dump(skip_dict, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        log.warning(f"Failed to save skip list: {e}")
+
+
+def record_failure(skip_dict, drive_id, error_msg):
+    """失敗を記録。N回以上でスキップ対象"""
+    entry = skip_dict.get(drive_id, {"count": 0, "last_error": ""})
+    entry["count"] = entry.get("count", 0) + 1
+    entry["last_error"] = (error_msg or "")[:200]
+    skip_dict[drive_id] = entry
+    return entry["count"]
+
+
+def get_permanently_skipped(skip_dict):
+    """N回以上失敗した drive_id の集合を返す"""
+    return {
+        did for did, info in skip_dict.items()
+        if info.get("count", 0) >= MAX_FAILURES_BEFORE_SKIP
+    }
 
 
 # ============================================================
@@ -255,7 +296,56 @@ def save_srt(segments, output_path):
 # Gemini
 # ============================================================
 
+def parse_transcribe_response(text):
+    """
+    Geminiレスポンスから文字起こしセグメントを抽出する。
+    複数のフォールバックパターンを試行。
+    """
+    if not text:
+        return []
+    text = text.strip()
+    # Remove markdown code fences
+    text = re.sub(r"^```(?:json)?\s*", "", text)
+    text = re.sub(r"\s*```$", "", text)
+
+    # Pattern 1: 全体が有効JSON
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, list):
+            return parsed
+    except json.JSONDecodeError:
+        pass
+
+    # Pattern 2: 最後の [ から最後の ] までを抽出
+    first = text.find("[")
+    last = text.rfind("]")
+    if first >= 0 and last > first:
+        try:
+            return json.loads(text[first:last + 1])
+        except json.JSONDecodeError:
+            pass
+
+    # Pattern 3: 個別のセグメントオブジェクトを正規表現で抽出（壊れたJSONからサルベージ）
+    segments = []
+    obj_pattern = re.compile(
+        r'\{\s*"start"\s*:\s*([0-9.]+)\s*,\s*"end"\s*:\s*([0-9.]+)\s*,\s*"text"\s*:\s*"((?:[^"\\]|\\.)*)"',
+        re.DOTALL,
+    )
+    for m in obj_pattern.finditer(text):
+        try:
+            segments.append({
+                "start": float(m.group(1)),
+                "end": float(m.group(2)),
+                "text": m.group(3).encode().decode("unicode_escape", errors="replace"),
+            })
+        except (ValueError, UnicodeDecodeError):
+            continue
+
+    return segments
+
+
 def transcribe(audio_path, gemini_client, max_retries=3):
+    last_exc = None
     for attempt in range(max_retries):
         try:
             import shutil, uuid
@@ -266,23 +356,45 @@ def transcribe(audio_path, gemini_client, max_retries=3):
                 os.remove(ascii_path)
             except Exception:
                 pass
+
+            # 2回目以降はプロンプトを強化
+            prompt_to_use = PROMPT
+            if attempt >= 1:
+                prompt_to_use = PROMPT + " 必ず有効なJSON配列のみを出力し、前後に説明文を付けないでください。"
+
             resp = gemini_client.models.generate_content(
-                model=GEMINI_MODEL, contents=[PROMPT, audio_file])
-            text = resp.text.strip()
-            if text.startswith("```"):
-                text = re.sub(r"^```[a-z]*\s*", "", text)
-                text = re.sub(r"\s*```$", "", text)
-            jm = re.search(r"\[.*\]", text, re.DOTALL)
-            if jm:
-                return json.loads(jm.group())
-            return []
+                model=GEMINI_MODEL, contents=[prompt_to_use, audio_file])
+            text = (resp.text or "").strip()
+
+            segments = parse_transcribe_response(text)
+
+            # 有効なセグメントのみフィルタ（必須フィールド保証）
+            valid = [
+                s for s in segments
+                if isinstance(s, dict)
+                and "start" in s and "end" in s and "text" in s
+                and s.get("text")
+            ]
+
+            if valid:
+                return valid
+            # パースは通ったが空の場合は即return
+            if attempt == max_retries - 1:
+                return []
+            # 空の場合もう一度試す
+            log.warning(f"Transcribe attempt {attempt+1}: empty/invalid segments, retrying")
+            time.sleep(5)
         except Exception as e:
+            last_exc = e
             if attempt < max_retries - 1:
                 wait = 10 * (attempt + 1)
                 log.warning(f"Transcribe retry {attempt+1}: {e}, waiting {wait}s")
                 time.sleep(wait)
             else:
                 raise
+    if last_exc:
+        raise last_exc
+    return []
 
 
 def embed_texts(texts, gemini_client, batch_size=50):
@@ -330,13 +442,13 @@ def process_one(video_info, drive_service, gemini_client, db_pool,
         # Quick speech check
         if not check_has_speech(audio_path):
             log.info(f"  NO SPEECH (skipped): {fname}")
-            return {"status": "no_speech", "file": fname}
+            return {"status": "no_speech", "file": fname, "drive_id": fid}
 
         # Transcribe
         segments = transcribe(audio_path, gemini_client)
         if not segments:
             log.info(f"  EMPTY: {fname}")
-            return {"status": "empty", "file": fname}
+            return {"status": "empty", "file": fname, "drive_id": fid}
 
         # SRT + upload
         srt_path = Path(tmp_dir) / f"{Path(fname).stem}_transcript.srt"
@@ -408,11 +520,11 @@ def process_one(video_info, drive_service, gemini_client, db_pool,
             db_pool.putconn(conn)
 
         return {"status": "ok", "file": fname, "segs": len(segments),
-                "dur": meta["duration_sec"]}
+                "dur": meta["duration_sec"], "drive_id": fid}
 
     except Exception as e:
         log.error(f"  ERROR: {fname}: {e}")
-        return {"status": "error", "file": fname, "error": str(e)}
+        return {"status": "error", "file": fname, "error": str(e), "drive_id": fid}
 
     finally:
         if local_path.exists():
@@ -450,6 +562,12 @@ def main():
 
     # Get processed IDs
     processed_ids = set()
+    skip_list = load_skip_list()
+    permanently_skipped = get_permanently_skipped(skip_list)
+    if permanently_skipped:
+        log.info(f"Skip list: {len(permanently_skipped)} videos permanently skipped "
+                 f"(failed >= {MAX_FAILURES_BEFORE_SKIP} times)")
+
     if args.resume:
         conn = db_pool.getconn()
         cur = conn.cursor()
@@ -457,6 +575,8 @@ def main():
         processed_ids = set(r[0] for r in cur.fetchall())
         db_pool.putconn(conn)
         log.info(f"Resume mode: {len(processed_ids)} already processed")
+        # permanently skipped も除外
+        processed_ids |= permanently_skipped
 
     # Collect all videos
     log.info(f"Scanning {len(folder_ids)} folders...")
@@ -501,12 +621,29 @@ def main():
             # Gemini APIレートリミット回避
             time.sleep(2)
 
+        save_counter = 0
         for future in as_completed(futures):
             idx, fname = futures[future]
             try:
                 result = future.result()
                 status = result["status"]
                 stats[status] = stats.get(status, 0) + 1
+                drive_id = result.get("drive_id")
+
+                # 失敗した場合はskip-listに記録
+                if drive_id and status in ("error", "empty"):
+                    err = result.get("error") or status
+                    count = record_failure(skip_list, drive_id, err)
+                    if count >= MAX_FAILURES_BEFORE_SKIP:
+                        log.warning(f"  → Added to permanent skip list "
+                                    f"(failed {count} times): {fname}")
+                # 成功した場合はskip-listから除外（復活）
+                elif drive_id and status == "ok" and drive_id in skip_list:
+                    del skip_list[drive_id]
+
+                save_counter += 1
+                if save_counter % 20 == 0:
+                    save_skip_list(skip_list)
 
                 elapsed = (datetime.now() - start_time).total_seconds()
                 done = sum(stats.values())
@@ -526,14 +663,21 @@ def main():
                 stats["error"] += 1
                 log.error(f"Future error: {fname}: {e}")
 
+        # ループ終了時にskip-list保存
+        save_skip_list(skip_list)
+
     # Summary
     elapsed = (datetime.now() - start_time).total_seconds()
+    permanently_skipped_now = get_permanently_skipped(skip_list)
     log.info("=" * 60)
     log.info(f"COMPLETE in {elapsed/3600:.1f} hours")
     log.info(f"  OK: {stats.get('ok', 0)}")
     log.info(f"  No speech: {stats.get('no_speech', 0)}")
     log.info(f"  Empty: {stats.get('empty', 0)}")
     log.info(f"  Errors: {stats.get('error', 0)}")
+    log.info(f"  Permanently skipped (>={MAX_FAILURES_BEFORE_SKIP} fails): "
+             f"{len(permanently_skipped_now)}")
+    log.info(f"  Skip list saved: {SKIP_LIST_PATH}")
     log.info("=" * 60)
 
     db_pool.closeall()
