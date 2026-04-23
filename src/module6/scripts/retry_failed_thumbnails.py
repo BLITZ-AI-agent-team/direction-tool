@@ -95,7 +95,7 @@ def download_file_with_retry(service, file_id, output_path, max_retries=3):
     return False
 
 
-def extract_thumbnail(video_path, timestamp_sec, output_path, timeout=10):
+def extract_thumbnail(video_path, timestamp_sec, output_path, timeout=30):
     cmd = [
         "ffmpeg", "-y",
         "-ss", str(max(0, timestamp_sec)),

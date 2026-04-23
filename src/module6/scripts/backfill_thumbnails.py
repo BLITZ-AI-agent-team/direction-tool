@@ -73,7 +73,7 @@ def download_file(service, file_id, output_path):
             _, done = dl.next_chunk()
 
 
-def extract_thumbnail(video_path, timestamp_sec, output_path, timeout=10):
+def extract_thumbnail(video_path, timestamp_sec, output_path, timeout=30):
     """単一サムネイル抽出 (320x180, JPEG q=5)"""
     cmd = [
         "ffmpeg", "-y",
