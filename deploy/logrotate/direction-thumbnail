@@ -1,0 +1,25 @@
+# Direction Module 6 - Thumbnail backfill log rotation
+#
+# 配置先: /etc/logrotate.d/direction-thumbnail
+# 対象: /root/nightly-thumb.log
+# ポリシー: 週次ローテーション、4世代保持、圧縮
+
+/root/nightly-thumb.log {
+    weekly
+    rotate 4
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 644 root root
+}
+
+/root/retry_failed_thumbnails.log {
+    weekly
+    rotate 4
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 644 root root
+}

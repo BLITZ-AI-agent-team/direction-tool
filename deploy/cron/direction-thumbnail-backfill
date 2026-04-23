@@ -1,0 +1,14 @@
+# Direction Module 6 - Nightly thumbnail backfill
+#
+# 配置先: /etc/cron.d/direction-thumbnail-backfill
+# 実行時刻: 毎日 02:00 (VPS時刻=UTC)
+# タイムアウト: 5時間（wrapper側の `timeout 5h`）
+# 排他制御: flock -n で多重起動防止
+#
+# ログ: /root/nightly-thumb.log（logrotate設定あり）
+
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+MAILTO=""
+
+0 2 * * * root /usr/bin/flock -n /var/lock/direction-thumb.lock /root/nightly-thumbnail-backfill.sh >> /root/nightly-thumb.log 2>&1
