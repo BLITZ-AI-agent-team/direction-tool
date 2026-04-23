@@ -36,6 +36,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import psycopg2
 from psycopg2.pool import ThreadedConnectionPool
 
+# Google API (httplib2) のデフォルトソケットタイムアウトは10秒で大容量動画DLに不十分。
+# 180秒に延長することで大容量動画のチャンク読み取りが途中で切れないようにする。
+import socket
+socket.setdefaulttimeout(180)
+
 
 DB_URL = os.environ.get(
     "DATABASE_URL",
