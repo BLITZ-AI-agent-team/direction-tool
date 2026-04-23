@@ -37,9 +37,9 @@ import psycopg2
 from psycopg2.pool import ThreadedConnectionPool
 
 # Google API (httplib2) のデフォルトソケットタイムアウトは10秒で大容量動画DLに不十分。
-# 180秒に延長することで大容量動画のチャンク読み取りが途中で切れないようにする。
+# VPS→Google Drive の実効DL速度次第で2GB動画が5分以上かかることもあるため、600秒に設定。
 import socket
-socket.setdefaulttimeout(180)
+socket.setdefaulttimeout(600)
 
 
 DB_URL = os.environ.get(
