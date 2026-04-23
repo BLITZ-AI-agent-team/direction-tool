@@ -61,6 +61,7 @@ log = logging.getLogger("backfill_thumb")
 
 
 def get_drive_service(sa_key_path):
+    """googleapiclientのDrive APIサービス（メタデータ取得用）"""
     from google.oauth2 import service_account
     from googleapiclient.discovery import build
     creds = service_account.Credentials.from_service_account_file(
@@ -68,14 +69,24 @@ def get_drive_service(sa_key_path):
     return build("drive", "v3", credentials=creds)
 
 
-def download_file(service, file_id, output_path):
-    from googleapiclient.http import MediaIoBaseDownload
-    request = service.files().get_media(fileId=file_id, supportsAllDrives=True)
-    with open(output_path, "wb") as f:
-        dl = MediaIoBaseDownload(f, request)
-        done = False
-        while not done:
-            _, done = dl.next_chunk()
+def get_authed_session(sa_key_path):
+    """requestsベースのGoogle認証セッション（DL用、httplib2より高速）"""
+    from google.oauth2 import service_account
+    from google.auth.transport.requests import AuthorizedSession
+    creds = service_account.Credentials.from_service_account_file(
+        sa_key_path, scopes=["https://www.googleapis.com/auth/drive"])
+    return AuthorizedSession(creds)
+
+
+def download_file(session, file_id, output_path):
+    """requests ストリーミングでDL（8MBチャンク、httplib2より高速）"""
+    url = f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media&supportsAllDrives=true"
+    with session.get(url, stream=True, timeout=(30, 600)) as r:
+        r.raise_for_status()
+        with open(output_path, "wb") as f:
+            for chunk in r.iter_content(chunk_size=8 * 1024 * 1024):
+                if chunk:
+                    f.write(chunk)
 
 
 def extract_thumbnail(video_path, timestamp_sec, output_path, timeout=30):
@@ -99,13 +110,12 @@ def extract_thumbnail(video_path, timestamp_sec, output_path, timeout=30):
 
 
 def process_one_asset(asset, sa_key_path, db_pool, tmp_dir):
-    """1動画の全サムネイル再生成（スレッドセーフ: 各ワーカーで独立drive_service生成）"""
+    """1動画の全サムネイル再生成（requests ベース: httplib2より高速）"""
     asset_id, drive_id, file_name, transcripts = asset
     # transcripts: [(transcript_id, start_sec), ...] (thumbnail_path IS NULL のみ)
 
-    # スレッドセーフのため、各ワーカーで独立したdrive_serviceを生成
-    # httplib2はスレッドセーフではないため共有禁止
-    drive_service = get_drive_service(sa_key_path)
+    # requests ベースの認証セッションを各ワーカーで独立生成
+    session = get_authed_session(sa_key_path)
 
     local_path = Path(tmp_dir) / f"{asset_id}_{file_name}"
     thumb_dir = THUMB_ROOT / str(asset_id)
@@ -114,9 +124,9 @@ def process_one_asset(asset, sa_key_path, db_pool, tmp_dir):
     result = {"asset_id": asset_id, "file": file_name, "ok": 0, "err": 0}
 
     try:
-        # Download
+        # Download (requests ストリーミング)
         try:
-            download_file(drive_service, drive_id, str(local_path))
+            download_file(session, drive_id, str(local_path))
         except Exception as e:
             log.error(f"  DL FAIL: {file_name}: {str(e)[:80]}")
             result["err"] = len(transcripts)

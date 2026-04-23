@@ -60,6 +60,7 @@ log = logging.getLogger("retry_thumb")
 
 
 def get_drive_service(sa_key_path):
+    """googleapiclientのDrive APIサービス（メタデータ用）"""
     from google.oauth2 import service_account
     from googleapiclient.discovery import build
     creds = service_account.Credentials.from_service_account_file(
@@ -67,18 +68,32 @@ def get_drive_service(sa_key_path):
     return build("drive", "v3", credentials=creds)
 
 
-def download_file_with_retry(service, file_id, output_path, max_retries=3):
-    """Exponential backoffリトライ付きダウンロード"""
-    from googleapiclient.http import MediaIoBaseDownload
+def get_authed_session(sa_key_path):
+    """requestsベースのGoogle認証セッション（DL用、httplib2より高速）"""
+    from google.oauth2 import service_account
+    from google.auth.transport.requests import AuthorizedSession
+    creds = service_account.Credentials.from_service_account_file(
+        sa_key_path, scopes=["https://www.googleapis.com/auth/drive"])
+    return AuthorizedSession(creds)
+
+
+def download_file_with_retry(session, file_id, output_path, max_retries=3):
+    """
+    requests ストリーミングでDL（httplib2より高速・安定）
+    - 8MBチャンクで効率DL
+    - 接続タイムアウト30秒、読み込みタイムアウト600秒
+    - exponential backoffリトライ
+    """
+    url = f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media&supportsAllDrives=true"
     last_err = None
     for attempt in range(max_retries):
         try:
-            request = service.files().get_media(fileId=file_id, supportsAllDrives=True)
-            with open(output_path, "wb") as f:
-                dl = MediaIoBaseDownload(f, request)
-                done = False
-                while not done:
-                    _, done = dl.next_chunk()
+            with session.get(url, stream=True, timeout=(30, 600)) as r:
+                r.raise_for_status()
+                with open(output_path, "wb") as f:
+                    for chunk in r.iter_content(chunk_size=8 * 1024 * 1024):
+                        if chunk:
+                            f.write(chunk)
             # 成功チェック: 0バイトじゃないこと
             if Path(output_path).stat().st_size > 0:
                 return True
@@ -119,11 +134,11 @@ def extract_thumbnail(video_path, timestamp_sec, output_path, timeout=30):
 
 
 def process_one_asset(asset, sa_key_path, db_pool, tmp_dir):
-    """スレッドセーフ: 各ワーカーで独立drive_service生成"""
+    """スレッドセーフ: 各ワーカーで独立認証セッション生成"""
     asset_id, drive_id, file_name, transcripts = asset
 
-    # httplib2はスレッドセーフでないため各ワーカーで独立生成
-    drive_service = get_drive_service(sa_key_path)
+    # requests ベースの認証セッションを各ワーカーで独立生成（httplib2不使用で高速）
+    session = get_authed_session(sa_key_path)
 
     local_path = Path(tmp_dir) / f"{asset_id}_{file_name}"
     thumb_dir = THUMB_ROOT / str(asset_id)
@@ -132,9 +147,9 @@ def process_one_asset(asset, sa_key_path, db_pool, tmp_dir):
     result = {"asset_id": asset_id, "file": file_name, "ok": 0, "err": 0}
 
     try:
-        # Download with retry
+        # Download with retry (requests ストリーミング)
         try:
-            download_file_with_retry(drive_service, drive_id, str(local_path))
+            download_file_with_retry(session, drive_id, str(local_path))
         except Exception as e:
             log.error(f"  DL FINAL FAIL: {file_name}: {str(e)[:100]}")
             result["err"] = len(transcripts)
