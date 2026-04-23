@@ -41,6 +41,13 @@ from psycopg2.pool import ThreadedConnectionPool
 import socket
 socket.setdefaulttimeout(600)
 
+# IPv4 強制: IPv6経由のGoogle API接続が遅い(実測11Mbps)問題への対策。
+# IPv4ならSpeedtest計測で985Mbps出ており、DL速度が数十倍速くなる見込み。
+_original_getaddrinfo = socket.getaddrinfo
+def _ipv4_only_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+    return _original_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
+socket.getaddrinfo = _ipv4_only_getaddrinfo
+
 
 DB_URL = os.environ.get(
     "DATABASE_URL",
