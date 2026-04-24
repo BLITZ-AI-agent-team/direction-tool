@@ -30,10 +30,13 @@ GEMINI_API_KEY=$(cat /root/gemini_key.txt)
 DATABASE_URL=$(tr -d '\n ' < /root/dburl.txt)
 export GEMINI_API_KEY DATABASE_URL
 
-# 5時間タイムアウト（業務開始前に必ず終わらせる）
-timeout 5h python3 /root/retry_failed_thumbnails.py \
+# 4時間タイムアウト（--limit 80 なら十分、業務開始前に必ず終わる）
+# workers 1 で低メモリ運用（2だと昨夜のcron失敗時にメモリ枯渇とtimeout重複で全滅した）
+# --limit 80 で1回80動画に絞り、5晩程度で337動画を消化
+timeout 4h python3 /root/retry_failed_thumbnails.py \
     --sa-key /root/sa-key.json \
-    --workers 2
+    --workers 1 \
+    --limit 80
 
 exit_code=$?
 echo "Nightly thumbnail backfill end: $(date '+%Y-%m-%d %H:%M:%S') (exit=${exit_code})"
