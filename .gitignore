@@ -22,3 +22,14 @@ src/module6/config/.env
 
 # Google Service Account Key
 *service-account*.json
+# BLITZ 標準（ログ・生成物・一時ファイル・秘密情報）
+*.log
+build/
+dist/
+node_modules/
+tmp/
+.DS_Store
+Thumbs.db
+.env.*
+!.env.example
+!blitz-status.json

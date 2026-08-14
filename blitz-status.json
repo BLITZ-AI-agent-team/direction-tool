@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "repo_summary": "制作ディレクション用の補助ツール（サムネイル自動補完の夜間バッチ等・意図的に一般公開）",
+  "category": "tool",
+  "status": "active",
+  "now": "夜間サムネ補完バッチの安定化まで反映済み（2026-04）",
+  "next": "次の改修テーマは未定（オーナー判断待ち）",
+  "tasks": [],
+  "updated_at": "2026-08-14T15:50:58+09:00",
+  "updated_by": "yamamoto-kosuke-ai"
+}
